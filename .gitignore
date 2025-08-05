@@ -1,0 +1,5 @@
+# Ignore all log files in the logs directory
+/logs/
+
+# Ignore environment variable files
+.env
