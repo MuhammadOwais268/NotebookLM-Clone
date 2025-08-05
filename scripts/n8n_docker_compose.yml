@@ -1,0 +1,21 @@
+# scripts/n8n_docker_compose.yml
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n_service
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      # This forces n8n to log everything to the console (stdout)
+      # so Docker can capture it for us.
+      - N8N_LOG_LEVEL=info
+      - N8N_LOG_OUTPUT=console
+    volumes:
+      # This volume persists your n8n workflows and credentials
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

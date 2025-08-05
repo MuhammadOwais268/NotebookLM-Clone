@@ -1,0 +1,58 @@
+# This is the full content for ~/NotebookLM-Clone/docker-compose.yml
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n_service
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres_db
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=notebooklm_db
+      - DB_POSTGRESDB_USER=user
+      - DB_POSTGRESDB_PASSWORD=password
+      - N8N_RUNNERS_ENABLED=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - postgres_db
+    networks:
+      - notebooklm_net
+
+  postgres_db:
+    image: pgvector/pgvector:pg15
+    container_name: postgres_db
+    restart: always
+    environment:
+      - POSTGRES_DB=notebooklm_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./scripts/db_init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - notebooklm_net
+    command: postgres -c log_statement=all -c log_destination=stderr
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama_cpu
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - notebooklm_net
+
+volumes:
+  n8n_data:
+  db_data:
+  ollama_data:
+
+networks:
+  notebooklm_net:
+    driver: bridge
