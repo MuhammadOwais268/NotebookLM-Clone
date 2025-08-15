@@ -26,6 +26,8 @@ services:
     image: pgvector/pgvector:pg15
     container_name: postgres_db
     restart: always
+    ports:
+      - "5433:5432" # This maps the container's port 5432 to your computer's port 5433
     environment:
       - POSTGRES_DB=notebooklm_db
       - POSTGRES_USER=user
@@ -47,6 +49,16 @@ services:
       - ollama_data:/root/.ollama
     networks:
       - notebooklm_net
+
+  # --- THIS NEW SERVICE PROVIDES THE DATABASE UI ---
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - notebooklm_net
+  # ----------------------------------------------------
 
 volumes:
   n8n_data:
