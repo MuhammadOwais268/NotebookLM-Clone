@@ -1,0 +1,309 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -432,
+        -208
+      ],
+      "id": "4488a6f6-2020-4fef-966c-d4aab9d6f766",
+      "name": "Webhook",
+      "webhookId": "ff04fe31-dc33-42f4-8694-612ff013e037"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, title, summary, content FROM notes\nORDER BY vector <=> $1\nLIMIT 5;",
+        "options": {
+          "queryReplacement": "=javascript {{ JSON.stringify($json.embedding) }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        48,
+        -208
+      ],
+      "id": "a779f867-0cee-4d03-be5a-c3b4c5793c73",
+      "name": "Postgres: Find Similar Notes",
+      "credentials": {
+        "postgres": {
+          "id": "NKxdhJobYtXb7TaZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create a new, single item to hold our results.\nconst newItem = {};\n\n// Get the original question by looking at the input of this node.\n// The data from the Postgres node doesn't have the question, so we look\n// at the input from the node before Postgres, which is the embedding node.\n// A simpler way is to just grab it from the very first node in the execution.\n// For simplicity and robustness, we'll assume the question is needed later.\nconst originalQuestion = $('Webhook').item.json.body.question;\n\n// Combine the content from all incoming items from Postgres into a single context string.\nconst combinedContext = items.map((item, index) => {\n  return `[Citation ${index + 1}, Source ID: ${item.json.id}]: \"${item.json.content}\"`;\n}).join('\\n\\n');\n\n// Add all the data we need to our single new item.\nnewItem.json = {\n  question: originalQuestion,\n  context_for_prompt: combinedContext\n};\n\n// Return an array containing only our single new item.\nreturn [newItem];"
+      },
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -208
+      ],
+      "id": "6093709f-0cd0-4863-968c-bcbe8a10c1de",
+      "name": "Function: Combine Context",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        -224
+      ],
+      "id": "77aa3fa3-4d10-413f-86aa-afca46b65708",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama_cpu:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"model\": \"mxbai-embed-large:latest\",\n    \"prompt\": $json.body.question\n  })\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -192,
+        -208
+      ],
+      "id": "19d6cbbe-4496-4879-9c38-11473ea3ccf0",
+      "name": "Ollama: Get Embeddings"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.ollamaBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        -208
+      ],
+      "id": "6db3f762-c2f2-40ce-aeb2-eb073ee6dd20",
+      "name": "Ollama: Generate Answer",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the single incoming item\nconst item = items[0];\n\n// Get the data from the previous node\nconst context = item.json.context_for_prompt;\nconst question = item.json.question;\n\n// Build the prompt string as before\nconst finalPrompt = `You are an expert research assistant. Your task is to answer the user's question based ONLY on the provided context.\nFollow these steps:\n1. First, write a comprehensive, direct answer to the question.\n2. After the answer, create a \"Citations\" section.\n3. In the Citations section, you MUST quote the exact, word-for-word sentence(s) from the context that you used to formulate your answer.\n4. You MUST include the corresponding citation number (e.g., [Citation 1]) at the end of each quote.\n\nRespond in a JSON object with two keys: \"answer\" and \"citations\". The \"citations\" key should be an array of objects, each containing a \"quote\" and its \"source_id_reference\".\n\nContext:\n${context}\n\nQuestion:\n${question}`;\n\n// CRITICAL STEP: Manually create the full JSON body as a string,\n// and safely escape the prompt.\nitem.json.ollamaBody = JSON.stringify({\n  \"model\": \"gemma:2b\",\n  \"stream\": false,\n  \"prompt\": finalPrompt\n});\n\n// Return the item\nreturn item;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        -208
+      ],
+      "id": "02f8d5a0-b40f-41c4-8135-db777aec05a7",
+      "name": "Build Final Prompt",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = items[0];\nconst aiResponseString = item.json.response;\nlet finalJson;\n\ntry {\n  // First, try to parse the response as if it's perfect JSON.\n  // This is the \"happy path\".\n  finalJson = JSON.parse(aiResponseString);\n\n} catch (error) {\n  // If parsing fails, it means the AI gave us plain text.\n  // This is the \"helpful AI\" path.\n  // We will build the JSON object ourselves.\n  finalJson = {\n    answer: aiResponseString, // Use the whole response as the answer\n    citations: [] // Since it's not JSON, we can't extract citations\n  };\n}\n\n// Return the final, clean JSON object.\nreturn [{ json: finalJson }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        -208
+      ],
+      "id": "02873d5f-6395-473d-9758-6a052f25b8bd",
+      "name": "Formate Final JSON"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "31f16cc0-d670-4dc0-b8d3-2c7ddfd8fc2f",
+              "name": "answer",
+              "value": "={{ $json.answer }}",
+              "type": "string"
+            },
+            {
+              "id": "7d124cd8-6892-4aff-a42a-32273238d4af",
+              "name": "prompt_online_search",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        -80
+      ],
+      "id": "81b620ad-1c1e-401c-ae47-95cd5a179203",
+      "name": "Set: Fallback Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "909408e7-0c32-45d2-a675-05ca68d9b1bf",
+              "leftValue": "={{ $json.answer }}",
+              "rightValue": "The context does not provide any information",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1232,
+        -208
+      ],
+      "id": "35c4736f-cd7c-4717-8a2b-12810df1263e",
+      "name": "If"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Ollama: Get Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Find Similar Notes": {
+      "main": [
+        [
+          {
+            "node": "Function: Combine Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function: Combine Context": {
+      "main": [
+        [
+          {
+            "node": "Build Final Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama: Get Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Find Similar Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama: Generate Answer": {
+      "main": [
+        [
+          {
+            "node": "Formate Final JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Final Prompt": {
+      "main": [
+        [
+          {
+            "node": "Ollama: Generate Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formate Final JSON": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Fallback Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set: Fallback Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "c14dfb3452d9d2266966fd3e5a7fc22c997ff6e18196b19a034a57d243b7bc02"
+  }
+}

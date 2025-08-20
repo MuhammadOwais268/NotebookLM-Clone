@@ -1,0 +1,657 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ingest",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryPropertyName": "file"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        224,
+        96
+      ],
+      "id": "11638fc2-d31f-4ceb-a1ea-918aa22afb04",
+      "name": "Webhook",
+      "webhookId": "dfd42e18-1024-4625-b7bb-403de6315947"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        1888,
+        96
+      ],
+      "id": "83b1df91-01d4-461d-816c-357e75208e82",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO notes (title, summary, content, vector)\nVALUES (\n  '{{ $json.title.replace(/'/g, \"''\") }}',\n  '{{ $json.summary.replace(/'/g, \"''\") }}',\n  '{{ $json.content.replace(/'/g, \"''\") }}',\n  '{{ JSON.stringify($json.vector) }}'::vector\n)\nRETURNING *;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3024,
+        112
+      ],
+      "id": "5b149cca-dae1-43ae-b516-b2fb615fe613",
+      "name": "Save to Postgres",
+      "credentials": {
+        "postgres": {
+          "id": "NKxdhJobYtXb7TaZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        3248,
+        112
+      ],
+      "id": "52757061-841a-4c4b-a0c5-c26bcbb991e2",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function node — normalize text input into `content`\nfor (let i = 0; i < items.length; i++) {\n  const json = items[i].json || {};\n  let content = \"\";\n\n  // Several common places where plain text might arrive\n  if (typeof json.body === \"string\") {\n    content = json.body;\n  } else if (json.body && typeof json.body.note === \"string\") {\n    content = json.body.note;\n  } else if (typeof json.note === \"string\") {\n    content = json.note;\n  } else if (typeof json.text === \"string\") {\n    content = json.text;\n  } else if (json.body && Object.keys(json.body).length) {\n    // fallback: stringify small objects\n    try {\n      content = JSON.stringify(json.body);\n    } catch (e) {\n      content = \"\";\n    }\n  }\n\n  items[i].json.content = content;\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        400
+      ],
+      "id": "cfeeb6e4-f850-4ea3-91d7-388cfbe7b387",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        -96
+      ],
+      "id": "9a15f41a-7c0e-42ad-971c-e1471eea0454",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c5bf80ac-2cf8-44df-bcf4-9b1274ebeada",
+              "name": "content",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1328,
+        -112
+      ],
+      "id": "ab9eebad-5a5e-4aed-b007-9b8d3c9b38a3",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "09043d92-19d7-4bcd-94a9-5ee0dd238475",
+              "leftValue": "={{ $('Webhook').item.json.body.body.url }}",
+              "rightValue": "pdf",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1088,
+        112
+      ],
+      "id": "0a2c8efa-e7ec-4a7f-80eb-243658f43849",
+      "name": "Check Content Type"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the HTML content directly from the JSON of the previous node\nconst htmlContent = $input.item.json.data;\n\n// Use the same regex to remove all HTML tags and clean up whitespace\nconst plainText = htmlContent.replace(/<[^>]*>/g, '').replace(/\\s\\s+/g, ' ').trim();\n\n// Return the result in the same format as the \"Extract from File\" node\nreturn { text: plainText };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        224
+      ],
+      "id": "13bb0029-d006-4b32-9882-11fd7263c278",
+      "name": "Remove tags"
+    },
+    {
+      "parameters": {
+        "url": "=https://app.scrapingbee.com/api/v1/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "CP2ZP8NHSBEMHF9KB29GMLIQ82OEBMLGHBMW8J70X0VHJLI55NT4FAWEQJ1NAHKMJHOZ7C5AW73EDA7A"
+            },
+            {
+              "name": "url",
+              "value": "={{ $json.body.body.url }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        112
+      ],
+      "id": "bce06788-12a7-44cc-b72f-7b6e0345feaa",
+      "name": "Fetch URL"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b3c0e014-f72d-4d44-8358-8a4ee8c1c8d2",
+              "name": "extracted_text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1568,
+        112
+      ],
+      "id": "cbc5c2fb-a95d-4a87-8426-90d059bf7311",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        32
+      ],
+      "id": "0296e49b-a3a3-41bd-988f-5396bee23bb5",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama_cpu:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"model\": \"llama3.2:1b\",\n    \"format\": \"json\",\n    \"stream\": false,\n    \"prompt\": \"You are an assistant that summarizes text and provides a title. Respond ONLY in this JSON format: {\\\"title\\\": \\\"string\\\", \\\"summary\\\": \\\"string\\\"}.\\n\\nDOCUMENT: The sun is hot.\\nRESPONSE: {\\\"title\\\": \\\"About the Sun\\\", \\\"summary\\\": \\\"The sun is a star known for its high temperature.\\\"}\\n\\nDOCUMENT:\\n\" + JSON.stringify($json.content).slice(1, -1) + \"\\nRESPONSE:\"\n  })\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2208,
+        0
+      ],
+      "id": "09a7dacc-2d52-4da5-a755-3e99ddee28d6",
+      "name": "Ollama: Get Metadata"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "80683829-8ac7-40db-ada5-7bcf0e0e3fa2",
+              "name": "title",
+              "value": "={{ JSON.parse($('Ollama: Get Metadata').item.json.response).title }}",
+              "type": "string"
+            },
+            {
+              "id": "dc7fb2a8-1e66-4fba-acc1-d4ebdacdf8be",
+              "name": "summary",
+              "value": "={{ JSON.parse($('Ollama: Get Metadata').item.json.response).summary }}",
+              "type": "string"
+            },
+            {
+              "id": "b4005ae2-cdab-483b-9ed7-416ee72dcbec",
+              "name": "content",
+              "value": "={{ $('Merge').item.json.content }}",
+              "type": "string"
+            },
+            {
+              "id": "c851a619-087a-4513-9001-7cd6fa7c7670",
+              "name": "vector",
+              "value": "={{ $json.embedding }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2768,
+        112
+      ],
+      "id": "4d0951fb-b689-41ee-a492-e5cd4655b0e0",
+      "name": "Combine AI Results"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "60ea87cb-4b16-4750-801f-eedb11d52169",
+              "leftValue": "={{ $json.headers['content-type'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "rightValue": "application/pdf"
+            },
+            {
+              "id": "39a9571d-0ff7-406a-be5e-d1581de2505d",
+              "leftValue": "={{ $json.body.body.url }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        96
+      ],
+      "id": "8ef4f0ed-7452-457a-b1bf-362959d5fc54",
+      "name": "Check for File Upload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama_cpu:11434/api/embeddings",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"model\": \"mxbai-embed-large:latest\",\n    \"prompt\": $json.content\n  })\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2288,
+        208
+      ],
+      "id": "913b7d26-d4c8-445e-88b0-c312f667671e",
+      "name": "Ollama: Get Embeddings"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2512,
+        112
+      ],
+      "id": "4a318b4b-be47-4e4f-9019-b3adae361587",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8b6343a1-7620-440b-8fe7-c2ef1ed43729",
+              "leftValue": "={{ $json.headers['content-type'] }}",
+              "rightValue": "application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        80
+      ],
+      "id": "548faf47-cce5-41fd-b41e-c8f72f5bf314",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Correctly access the content from the first (and only) incoming item\nconst text = items[0].json.content;\n\n// Split the text into sentences\nconst sentences = text.match(/[^.!?]+[.!?]+/g) || [];\n\n// Group sentences into chunks of a desired size\nconst chunkSize = 5; // Combine 5 sentences per chunk\nconst chunks = [];\nfor (let i = 0; i < sentences.length; i += chunkSize) {\n  const chunk = sentences.slice(i, i + chunkSize).join(' ').trim();\n  if (chunk) {\n    // Each chunk must be a valid n8n item with a json property\n    chunks.push({ json: { content: chunk } });\n  }\n}\n\n// Return the array of new items\nreturn chunks;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        208
+      ],
+      "id": "a7a371a0-ea9e-49ea-bedc-b7aff3fc90c0",
+      "name": "Code"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check for File Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Ollama: Get Metadata",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Postgres": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Content Type": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Remove tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove tags": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch URL": {
+      "main": [
+        [
+          {
+            "node": "Check Content Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama: Get Metadata": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine AI Results": {
+      "main": [
+        [
+          {
+            "node": "Save to Postgres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for File Upload": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama: Get Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Combine AI Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Ollama: Get Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c14dfb3452d9d2266966fd3e5a7fc22c997ff6e18196b19a034a57d243b7bc02"
+  }
+}
