@@ -1,0 +1,196 @@
+{
+  "name": "[API] Chat with Documents",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        320
+      ],
+      "id": "b1c2d3e4-f5a6-b7c8-d9e0-f1a2b3c4d5e6",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "url": "http://ollama:11434/api/embeddings",
+        "options": {
+          "bodyContentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "model",
+                "value": "mxbai-embed-large"
+              },
+              {
+                "name": "prompt",
+                "value": "={{ $json.body.question }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        320
+      ],
+      "id": "f22f7413-7d2d-4176-bb50-10113c23e80e",
+      "name": "Ollama: Get Question Vector"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT content FROM notes\nORDER BY vector <=> $1\nLIMIT 5;",
+        "options": {
+          "preparedStatements": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "value": "={{ JSON.stringify($json.embedding) }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        960,
+        320
+      ],
+      "id": "e0c4a4e1-23f2-45e0-94d8-c7a6e127394c",
+      "name": "Postgres: Find Similar Notes",
+      "credentials": {
+        "postgres": {
+          "id": "NKxdhJobYtXb7TaZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const combinedContext = items.map(item => item.json.content).join('\\n\\n---\\n\\n');\nreturn [{ json: { context: combinedContext } }];"
+      },
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        320
+      ],
+      "id": "a3b4c5d6-e7f8-a9b0-c1d2-e3f4a5b6c7d8",
+      "name": "Function: Combine Context"
+    },
+    {
+      "parameters": {
+        "url": "http://ollama:11434/api/generate",
+        "options": {
+          "bodyContentType": "json",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "model",
+                "value": "gemma:2b"
+              },
+              {
+                "name": "stream",
+                "value": "={{false}}"
+              },
+              {
+                "name": "prompt",
+                "value": "Using ONLY the following context, please provide a concise answer to the user's question. Do not use any other information. If the context does not contain the answer, say \"I could not find an answer in your notes.\"\n\nContext:\n{{ $json.context }}\n\nQuestion:\n{{ $('Webhook').item.json.body.question }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        320
+      ],
+      "id": "e30e6a39-c1f9-4b6e-85c1-17730d1d227b",
+      "name": "Ollama: Generate Answer"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        320
+      ],
+      "id": "f04c6439-6617-48f0-b976-13a8f465c49b",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Ollama: Get Question Vector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama: Get Question Vector": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Find Similar Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Find Similar Notes": {
+      "main": [
+        [
+          {
+            "node": "Function: Combine Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function: Combine Context": {
+      "main": [
+        [
+          {
+            "node": "Ollama: Generate Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama: Generate Answer": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

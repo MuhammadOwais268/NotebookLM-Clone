@@ -1,5 +1,3 @@
-# This is the full content for ~/NotebookLM-Clone/docker-compose.yml
-
 services:
   n8n:
     image: n8nio/n8n:latest
@@ -15,6 +13,7 @@ services:
       - DB_POSTGRESDB_USER=user
       - DB_POSTGRESDB_PASSWORD=password
       - N8N_RUNNERS_ENABLED=true
+      - WEBHOOK_CORS_ALLOWED_ORIGINS=*
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:
@@ -27,7 +26,7 @@ services:
     container_name: postgres_db
     restart: always
     ports:
-      - "5433:5432" # This maps the container's port 5432 to your computer's port 5433
+      - "5433:5432"
     environment:
       - POSTGRES_DB=notebooklm_db
       - POSTGRES_USER=user
@@ -50,7 +49,6 @@ services:
     networks:
       - notebooklm_net
 
-  # --- THIS NEW SERVICE PROVIDES THE DATABASE UI ---
   adminer:
     image: adminer
     restart: always
@@ -58,7 +56,6 @@ services:
       - "8080:8080"
     networks:
       - notebooklm_net
-  # ----------------------------------------------------
 
 volumes:
   n8n_data:

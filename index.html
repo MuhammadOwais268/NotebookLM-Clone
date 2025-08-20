@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Notebook</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        #sidebar {
+            width: 300px;
+            background-color: #fff;
+            border-right: 1px solid #ddd;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        #sidebar h2 {
+            margin-top: 0;
+        }
+        #add-source-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        #add-source-btn:hover {
+            background-color: #0056b3;
+        }
+        #sources-list {
+            list-style: none;
+            padding: 0;
+        }
+        #sources-list li {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #sources-list li:hover {
+            background-color: #f8f9fa;
+        }
+        #sources-list li.selected {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+        .source-content {
+            flex: 1;
+        }
+        .source-summary {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 5px;
+            display: none;
+        }
+        .source-summary.visible {
+            display: block;
+        }
+        .remove-source-btn {
+            padding: 5px 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .remove-source-btn:hover {
+            background-color: #c82333;
+        }
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        #chat-history {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 10px;
+        }
+        .chat-header {
+            font-weight: bold;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-bottom: 1px solid #ddd;
+        }
+        .chat-source-header {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .chat-source-summary {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #d1e7dd;
+        }
+        .bot-message {
+            background-color: #f8d7da;
+        }
+        .online-search-message {
+            background-color: #d1e7dd;
+            font-style: italic;
+        }
+        .citations {
+            font-size: 0.9em;
+            color: #555;
+        }
+        .citations ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        #chat-input {
+            display: none;
+            flex-direction: row;
+            gap: 10px;
+        }
+        #question-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        #send-btn {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #send-btn:hover {
+            background-color: #218838;
+        }
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        #modal-content {
+            background-color: #fff;
+            padding: 20px;
+            width: 500px;
+            border-radius: 5px;
+        }
+        #modal-content select, input, textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+        #submit-webhook-btn {
+            padding: 10px;
+            background-color: #ffc107;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+        #submit-webhook-btn:hover {
+            background-color: #e0a800;
+        }
+        #status-message {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #333;
+        }
+        #status-message.error {
+            color: #dc3545;
+        }
+        #status-message.success {
+            color: #28a745;
+        }
+        #add-to-list-btn {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        #add-to-list-btn.enabled {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #add-to-list-btn:hover.enabled {
+            background-color: #0056b3;
+        }
+        #close-modal {
+            float: right;
+            cursor: pointer;
+        }
+        #no-source {
+            text-align: center;
+            color: #888;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h2>Sources</h2>
+        <button id="add-source-btn">Add Source</button>
+        <ul id="sources-list"></ul>
+    </div>
+    <div id="main">
+        <div id="chat-history">
+            <div class="chat-header">Messages</div>
+            <div class="chat-header">Citations</div>
+        </div>
+        <div id="chat-input">
+            <input type="text" id="question-input" placeholder="Ask a question about this source...">
+            <button id="send-btn">Send</button>
+        </div>
+        <div id="no-source">Select a source to start chatting.</div>
+    </div>
+
+    <div id="modal">
+        <div id="modal-content">
+            <span id="close-modal">×</span>
+            <h3>Add New Source</h3>
+            <label for="source-type">Type:</label>
+            <select id="source-type">
+                <option value="pdf">PDF</option>
+                <option value="text">Plain Text</option>
+                <option value="url">URL</option>
+            </select>
+            <div id="pdf-input" style="display: none;">
+                <label for="pdf-file">PDF File:</label>
+                <input type="file" id="pdf-file" accept=".pdf">
+            </div>
+            <div id="text-input" style="display: none;">
+                <label for="text-content">Text Content:</label>
+                <textarea id="text-content" rows="5" placeholder="Enter plain text"></textarea>
+            </div>
+            <div id="url-input" style="display: none;">
+                <label for="url-value">URL:</label>
+                <input type="text" id="url-value" placeholder="Enter URL">
+            </div>
+            <button id="submit-webhook-btn">Submit to Webhook</button>
+            <div id="status-message"></div>
+            <button id="add-to-list-btn">Add to List</button>
+        </div>
+    </div>
+
+    <script>
+        // Webhook URLs
+        const INGEST_URL = 'http://localhost:5678/webhook/ingest';
+        const QUERY_URL = 'http://localhost:5678/webhook/chat';
+        const ONLINE_SEARCH_URL = 'http://localhost:5678/webhook/online-search';
+
+        // Local storage for sources, summaries, and chat histories
+        let sources = JSON.parse(localStorage.getItem('sources')) || [];
+        let summaries = JSON.parse(localStorage.getItem('summaries')) || {};
+        let chatHistories = JSON.parse(localStorage.getItem('chatHistories')) || {};
+
+        const sourcesList = document.getElementById('sources-list');
+        const chatHistory = document.getElementById('chat-history');
+        const chatInput = document.getElementById('chat-input');
+        const questionInput = document.getElementById('question-input');
+        const sendBtn = document.getElementById('send-btn');
+        const noSource = document.getElementById('no-source');
+        const addSourceBtn = document.getElementById('add-source-btn');
+        const modal = document.getElementById('modal');
+        const sourceType = document.getElementById('source-type');
+        const pdfInput = document.getElementById('pdf-input');
+        const pdfFile = document.getElementById('pdf-file');
+        const textInput = document.getElementById('text-input');
+        const textContent = document.getElementById('text-content');
+        const urlInput = document.getElementById('url-input');
+        const urlValue = document.getElementById('url-value');
+        const submitWebhookBtn = document.getElementById('submit-webhook-btn');
+        const statusMessage = document.getElementById('status-message');
+        const addToListBtn = document.getElementById('add-to-list-btn');
+        const closeModal = document.getElementById('close-modal');
+
+        let selectedSource = null;
+        let ingestionResult = null;
+        let pendingOnlineSearchQuestion = null;
+
+        function renderSources() {
+            sourcesList.innerHTML = '';
+            sources.forEach(title => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="source-content">
+                        <strong>${title}</strong>
+                        <div class="source-summary ${title === selectedSource ? 'visible' : ''}">
+                            ${summaries[title] || 'No summary available'}
+                        </div>
+                    </div>
+                    <button class="remove-source-btn" data-title="${title}">Remove</button>
+                `;
+                li.querySelector('.source-content').onclick = () => selectSource(title);
+                li.querySelector('.remove-source-btn').onclick = () => removeSource(title);
+                if (title === selectedSource) li.classList.add('selected');
+                sourcesList.appendChild(li);
+            });
+        }
+
+        function selectSource(title) {
+            selectedSource = title;
+            renderSources();
+            noSource.style.display = 'none';
+            chatInput.style.display = 'flex';
+            renderChat(title);
+        }
+
+        function removeSource(title) {
+            if (!confirm(`Are you sure you want to remove "${title}"? This will delete its chat history.`)) return;
+            sources = sources.filter(t => t !== title);
+            delete summaries[title];
+            delete chatHistories[title];
+            localStorage.setItem('sources', JSON.stringify(sources));
+            localStorage.setItem('summaries', JSON.stringify(summaries));
+            localStorage.setItem('chatHistories', JSON.stringify(chatHistories));
+            if (selectedSource === title) {
+                selectedSource = null;
+                chatInput.style.display = 'none';
+                noSource.style.display = 'block';
+                chatHistory.innerHTML = `
+                    <div class="chat-header">Messages</div>
+                    <div class="chat-header">Citations</div>
+                `;
+            }
+            renderSources();
+        }
+
+        function renderChat(title) {
+            chatHistory.innerHTML = `
+                <div class="chat-header">Messages</div>
+                <div class="chat-header">Citations</div>
+            `;
+            if (selectedSource) {
+                const messageHeader = document.createElement('div');
+                messageHeader.classList.add('chat-source-header');
+                messageHeader.textContent = selectedSource;
+                chatHistory.children[0].appendChild(messageHeader);
+
+                const summaryDiv = document.createElement('div');
+                summaryDiv.classList.add('chat-source-summary');
+                summaryDiv.textContent = summaries[selectedSource] || 'No summary available';
+                chatHistory.children[0].appendChild(summaryDiv);
+            }
+            const history = chatHistories[title] || [];
+            history.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', msg.type === 'user' ? 'user-message' : 'bot-message');
+                if (msg.onlineSearch) {
+                    messageDiv.classList.add('online-search-message');
+                    messageDiv.textContent = `[Online Search] ${msg.content}`;
+                } else {
+                    messageDiv.textContent = msg.content;
+                }
+                chatHistory.children[0].appendChild(messageDiv);
+
+                const citationsDiv = chatHistory.children[1];
+                if (msg.type === 'bot' && msg.citations && msg.citations.length) {
+                    const ul = document.createElement('ul');
+                    msg.citations.forEach(citation => {
+                        const li = document.createElement('li');
+                        li.textContent = `${citation.source_id_reference}: ${citation.quote}`;
+                        ul.appendChild(li);
+                    });
+                    citationsDiv.appendChild(ul);
+                }
+            });
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function addMessage(title, type, content, citations = [], onlineSearch = false) {
+            if (!chatHistories[title]) chatHistories[title] = [];
+            chatHistories[title].push({ type, content, citations, onlineSearch });
+            localStorage.setItem('chatHistories', JSON.stringify(chatHistories));
+            renderChat(title);
+        }
+
+        async function sendQuestion() {
+            if (!selectedSource || !questionInput.value.trim()) return;
+            const question = questionInput.value.trim();
+            addMessage(selectedSource, 'user', question);
+
+            if (pendingOnlineSearchQuestion) {
+                if (question.toLowerCase() === 'yes') {
+                    try {
+                        const response = await fetch(ONLINE_SEARCH_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ question: pendingOnlineSearchQuestion })
+                        });
+                        const data = await response.json();
+                        // Handle the nested response format
+                        const result = Array.isArray(data) ? data[0] : data;
+                        const answer = result.content && result.content.parts && result.content.parts[0] ? result.content.parts[0].text : 'Error: No answer received.';
+                        addMessage(selectedSource, 'bot', answer, result.citations || [], true);
+                    } catch (error) {
+                        addMessage(selectedSource, 'bot', 'Error: Failed to perform online search.', [], true);
+                    }
+                    pendingOnlineSearchQuestion = null;
+                } else {
+                    addMessage(selectedSource, 'bot', 'Online search cancelled.');
+                    pendingOnlineSearchQuestion = null;
+                }
+                questionInput.value = '';
+                return;
+            }
+
+            questionInput.value = '';
+            try {
+                const response = await fetch(QUERY_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source: selectedSource, question })
+                });
+                const data = await response.json();
+                const result = Array.isArray(data) ? data[0] : data;
+                if (result.prompt_online_search) {
+                    addMessage(selectedSource, 'bot', `${result.answer} Would you like to search online? (yes/no)`);
+                    pendingOnlineSearchQuestion = question;
+                } else {
+                    addMessage(selectedSource, 'bot', result.answer || 'Error: No answer received.', result.citations || []);
+                }
+            } catch (error) {
+                addMessage(selectedSource, 'bot', 'Error: Failed to get answer.');
+            }
+        }
+
+        function showModal() {
+            modal.style.display = 'flex';
+            sourceType.onchange = toggleInputs;
+            toggleInputs();
+            statusMessage.innerHTML = '';
+            statusMessage.classList.remove('error', 'success');
+            pdfFile.value = '';
+            textContent.value = '';
+            urlValue.value = '';
+            ingestionResult = null;
+            addToListBtn.classList.remove('enabled');
+        }
+
+        function toggleInputs() {
+            pdfInput.style.display = 'none';
+            textInput.style.display = 'none';
+            urlInput.style.display = 'none';
+            if (sourceType.value === 'pdf') pdfInput.style.display = 'block';
+            if (sourceType.value === 'text') textInput.style.display = 'block';
+            if (sourceType.value === 'url') urlInput.style.display = 'block';
+        }
+
+        async function submitToWebhook() {
+            const type = sourceType.value;
+            statusMessage.textContent = 'Submitting...';
+            statusMessage.classList.remove('error', 'success');
+
+            try {
+                let response;
+                if (type === 'pdf') {
+                    if (!pdfFile.files.length) {
+                        statusMessage.textContent = 'Please select a PDF file.';
+                        statusMessage.classList.add('error');
+                        return;
+                    }
+                    const file = pdfFile.files[0];
+                    response = await fetch(INGEST_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/pdf' },
+                        body: file
+                    });
+                } else if (type === 'text') {
+                    const text = textContent.value.trim();
+                    if (!text) {
+                        statusMessage.textContent = 'Please enter text content.';
+                        statusMessage.classList.add('error');
+                        return;
+                    }
+                    response = await fetch(INGEST_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify(text)
+                    });
+                } else if (type === 'url') {
+                    const url = urlValue.value.trim();
+                    if (!url) {
+                        statusMessage.textContent = 'Please enter a URL.';
+                        statusMessage.classList.add('error');
+                        return;
+                    }
+                    response = await fetch(INGEST_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url })
+                    });
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (!data.title) {
+                        statusMessage.textContent = 'Error: Webhook did not return a title.';
+                        statusMessage.classList.add('error');
+                        return;
+                    }
+                    ingestionResult = { title: data.title, summary: data.summary || 'No summary provided' };
+                    statusMessage.textContent = `Source ingested successfully! Title: ${data.title}`;
+                    statusMessage.classList.add('success');
+                    addToListBtn.classList.add('enabled');
+                } else {
+                    statusMessage.textContent = 'Error: Failed to ingest source.';
+                    statusMessage.classList.add('error');
+                }
+            } catch (error) {
+                statusMessage.textContent = 'Error: Network issue or server unavailable.';
+                statusMessage.classList.add('error');
+            }
+        }
+
+        function addToList() {
+            if (!ingestionResult) {
+                statusMessage.textContent = 'Please submit the source to the webhook first.';
+                statusMessage.classList.add('error');
+                return;
+            }
+            const { title, summary } = ingestionResult;
+            if (sources.includes(title)) {
+                statusMessage.textContent = 'Source with this title already exists.';
+                statusMessage.classList.add('error');
+                return;
+            }
+            sources.push(title);
+            summaries[title] = summary;
+            localStorage.setItem('sources', JSON.stringify(sources));
+            localStorage.setItem('summaries', JSON.stringify(summaries));
+            renderSources();
+            modal.style.display = 'none';
+        }
+
+        addSourceBtn.onclick = showModal;
+        closeModal.onclick = () => modal.style.display = 'none';
+        submitWebhookBtn.onclick = submitToWebhook;
+        addToListBtn.onclick = addToList;
+        sendBtn.onclick = sendQuestion;
+        questionInput.onkeydown = e => { if (e.key === 'Enter') sendQuestion(); };
+
+        // Initial render
+        renderSources();
+    </script>
+</body>
+</html>
