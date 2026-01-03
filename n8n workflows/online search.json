@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        0
+        -96,
+        64
       ],
-      "id": "cfacd450-d8fc-48d5-b523-95d162cd6dbd",
+      "id": "56386826-b9fe-4f24-b89c-0ee984e8ec80",
       "name": "Webhook",
       "webhookId": "410faf6b-a7dc-4410-a06c-7970ede64613"
     },
@@ -24,10 +24,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        736,
-        0
+        640,
+        64
       ],
-      "id": "6e7cff85-ce8b-450f-8ef7-ec9c86a60b8f",
+      "id": "4fdb41d5-3548-469c-b7d6-8d68944ed4ab",
       "name": "Respond to Webhook"
     },
     {
@@ -47,19 +47,19 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        208,
-        0
+        112,
+        64
       ],
-      "id": "74eeb27f-2b07-4cfb-8352-81b93ad0a672",
+      "id": "338696ae-ce00-4d14-b63d-bd8dde3e3709",
       "name": "Edit Fields"
     },
     {
       "parameters": {
         "modelId": {
           "__rl": true,
-          "value": "models/gemini-1.5-flash-latest",
+          "value": "models/gemini-2.5-flash",
           "mode": "list",
-          "cachedResultName": "models/gemini-1.5-flash-latest"
+          "cachedResultName": "models/gemini-2.5-flash"
         },
         "messages": {
           "values": [
@@ -73,14 +73,14 @@
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1,
       "position": [
-        416,
-        0
+        320,
+        64
       ],
-      "id": "1f0124b9-8732-4a4d-90e2-a676fd052980",
+      "id": "7fb8ebf0-0541-4328-99d2-f6fb811f0918",
       "name": "Message a model",
       "credentials": {
         "googlePalmApi": {
-          "id": "A18umDiBEe3VGPfP",
+          "id": "ftv5dU9wcAcpFLNd",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -124,6 +124,6 @@
   "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "c14dfb3452d9d2266966fd3e5a7fc22c997ff6e18196b19a034a57d243b7bc02"
+    "instanceId": "59038d7a1c6ed5a617f636bfecfe4415beb3eda0565597319a942949c093d1c7"
   }
 }

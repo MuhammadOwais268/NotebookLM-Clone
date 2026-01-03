@@ -12,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        224,
-        96
+        -1392,
+        272
       ],
-      "id": "11638fc2-d31f-4ceb-a1ea-918aa22afb04",
+      "id": "d9272676-1de5-47a3-bdcc-d6d8444646f2",
       "name": "Webhook",
       "webhookId": "dfd42e18-1024-4625-b7bb-403de6315947"
     },
@@ -24,10 +24,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 1,
       "position": [
-        1888,
-        96
+        272,
+        272
       ],
-      "id": "83b1df91-01d4-461d-816c-357e75208e82",
+      "id": "0b5284e3-1277-456f-a06c-3e30968afcaa",
       "name": "Merge"
     },
     {
@@ -39,14 +39,14 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        3024,
-        112
+        1408,
+        288
       ],
-      "id": "5b149cca-dae1-43ae-b516-b2fb615fe613",
+      "id": "864901f6-1551-4e91-9b41-101c94c5ae31",
       "name": "Save to Postgres",
       "credentials": {
         "postgres": {
-          "id": "NKxdhJobYtXb7TaZ",
+          "id": "5Wgi2JIG1voNhwEm",
           "name": "Postgres account"
         }
       }
@@ -58,10 +58,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        3248,
-        112
+        1616,
+        288
       ],
-      "id": "52757061-841a-4c4b-a0c5-c26bcbb991e2",
+      "id": "acefa4da-2b09-4f60-a573-85f6a58393ab",
       "name": "Respond to Webhook"
     },
     {
@@ -71,10 +71,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1120,
-        400
+        -496,
+        576
       ],
-      "id": "cfeeb6e4-f850-4ea3-91d7-388cfbe7b387",
+      "id": "4e6fae96-86c4-46c6-a196-501b4e284500",
       "name": "Code1"
     },
     {
@@ -86,10 +86,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        1088,
-        -96
+        -528,
+        80
       ],
-      "id": "9a15f41a-7c0e-42ad-971c-e1471eea0454",
+      "id": "e39a089b-52c1-4bc6-9093-a1ae0e788486",
       "name": "Extract from File"
     },
     {
@@ -109,10 +109,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1328,
-        -112
+        -288,
+        64
       ],
-      "id": "ab9eebad-5a5e-4aed-b007-9b8d3c9b38a3",
+      "id": "8b55285a-1bd9-4cad-a00c-583e223194d2",
       "name": "Edit Fields1"
     },
     {
@@ -142,10 +142,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1088,
-        112
+        -528,
+        288
       ],
-      "id": "0a2c8efa-e7ec-4a7f-80eb-243658f43849",
+      "id": "24166fac-3c9a-406d-80c5-89d575b3ba6d",
       "name": "Check Content Type"
     },
     {
@@ -155,10 +155,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1344,
-        224
+        -272,
+        400
       ],
-      "id": "13bb0029-d006-4b32-9882-11fd7263c278",
+      "id": "81c07c9e-08c4-4d51-a0a8-f6782e495b92",
       "name": "Remove tags"
     },
     {
@@ -198,10 +198,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        880,
-        112
+        -736,
+        288
       ],
-      "id": "bce06788-12a7-44cc-b72f-7b6e0345feaa",
+      "id": "1dfdbf2a-bffc-4c04-aac3-7915e01faaf8",
       "name": "Fetch URL"
     },
     {
@@ -221,10 +221,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1568,
-        112
+        -48,
+        288
       ],
-      "id": "cbc5c2fb-a95d-4a87-8426-90d059bf7311",
+      "id": "fa561800-a296-4430-a300-b5c358accaab",
       "name": "Edit Fields"
     },
     {
@@ -235,29 +235,11 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        1344,
-        32
+        -272,
+        208
       ],
-      "id": "0296e49b-a3a3-41bd-988f-5396bee23bb5",
+      "id": "5d1c532e-7d6d-48cd-8a48-8358047021fc",
       "name": "Extract from File1"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "http://ollama_cpu:11434/api/generate",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{\n  JSON.stringify({\n    \"model\": \"llama3.2:1b\",\n    \"format\": \"json\",\n    \"stream\": false,\n    \"prompt\": \"You are an assistant that summarizes text and provides a title. Respond ONLY in this JSON format: {\\\"title\\\": \\\"string\\\", \\\"summary\\\": \\\"string\\\"}.\\n\\nDOCUMENT: The sun is hot.\\nRESPONSE: {\\\"title\\\": \\\"About the Sun\\\", \\\"summary\\\": \\\"The sun is a star known for its high temperature.\\\"}\\n\\nDOCUMENT:\\n\" + JSON.stringify($json.content).slice(1, -1) + \"\\nRESPONSE:\"\n  })\n}}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2208,
-        0
-      ],
-      "id": "09a7dacc-2d52-4da5-a755-3e99ddee28d6",
-      "name": "Ollama: Get Metadata"
     },
     {
       "parameters": {
@@ -294,10 +276,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2768,
-        112
+        1152,
+        288
       ],
-      "id": "4d0951fb-b689-41ee-a492-e5cd4655b0e0",
+      "id": "a511c1a4-ab04-4f3d-a5a3-9a075b12d0c7",
       "name": "Combine AI Results"
     },
     {
@@ -337,10 +319,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        432,
-        96
+        -1184,
+        272
       ],
-      "id": "8ef4f0ed-7452-457a-b1bf-362959d5fc54",
+      "id": "a64485c1-e125-48e1-8f9c-e3d5cf5b0d17",
       "name": "Check for File Upload"
     },
     {
@@ -355,26 +337,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2288,
-        208
+        672,
+        384
       ],
-      "id": "913b7d26-d4c8-445e-88b0-c312f667671e",
+      "id": "8ec128a0-14f3-4216-8b45-1415d8b8a0dc",
       "name": "Ollama: Get Embeddings"
-    },
-    {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineByPosition",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2,
-      "position": [
-        2512,
-        112
-      ],
-      "id": "4a318b4b-be47-4e4f-9019-b3adae361587",
-      "name": "Merge1"
     },
     {
       "parameters": {
@@ -403,24 +370,57 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        672,
-        80
+        -944,
+        256
       ],
-      "id": "548faf47-cce5-41fd-b41e-c8f72f5bf314",
+      "id": "20c10a95-5606-469a-9604-7898e201d3d8",
       "name": "If"
     },
     {
       "parameters": {
-        "jsCode": "// Correctly access the content from the first (and only) incoming item\nconst text = items[0].json.content;\n\n// Split the text into sentences\nconst sentences = text.match(/[^.!?]+[.!?]+/g) || [];\n\n// Group sentences into chunks of a desired size\nconst chunkSize = 5; // Combine 5 sentences per chunk\nconst chunks = [];\nfor (let i = 0; i < sentences.length; i += chunkSize) {\n  const chunk = sentences.slice(i, i + chunkSize).join(' ').trim();\n  if (chunk) {\n    // Each chunk must be a valid n8n item with a json property\n    chunks.push({ json: { content: chunk } });\n  }\n}\n\n// Return the array of new items\nreturn chunks;"
+        "jsCode": "let allChunks = [];\n\n// Loop through all incoming files/documents\nfor (const item of $input.all()) {\n  const text = item.json.content || \"\";\n  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];\n  \n  const chunkSize = 5; \n  for (let i = 0; i < sentences.length; i += chunkSize) {\n    const chunk = sentences.slice(i, i + chunkSize).join(' ').trim();\n    if (chunk) {\n      allChunks.push({\n        json: {\n          content: chunk,\n          // Pass through the original document ID or filename if you have it\n          source_info: item.json.title || \"Unknown Source\" \n        }\n      });\n    }\n  }\n}\n\nreturn allChunks;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2096,
-        208
+        480,
+        384
       ],
-      "id": "a7a371a0-ea9e-49ea-bedc-b7aff3fc90c0",
-      "name": "Code"
+      "id": "36be4c82-4c87-40b3-863b-7571ce5fa532",
+      "name": "Chunking"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        896,
+        288
+      ],
+      "id": "c273227c-2003-4ffa-aa7e-e6661f8210a9",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama_cpu:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"model\": \"llama3.2:1b\",\n    \"format\": \"json\",\n    \"stream\": false,\n    \"prompt\": \"You are an assistant that summarizes text and provides a title. Respond ONLY in this JSON format: {\\\"title\\\": \\\"string\\\", \\\"summary\\\": \\\"string\\\"}.\\n\\nDOCUMENT: The sun is hot.\\nRESPONSE: {\\\"title\\\": \\\"About the Sun\\\", \\\"summary\\\": \\\"The sun is a star known for its high temperature.\\\"}\\n\\nDOCUMENT:\\n\" + JSON.stringify($json.content).slice(1, -1) + \"\\nRESPONSE:\"\n  })\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        176
+      ],
+      "id": "23c0b0bd-9892-4b1b-bf2a-0db3db9d2b40",
+      "name": "Ollama: Get Metadata"
     }
   ],
   "connections": {
@@ -439,12 +439,12 @@
       "main": [
         [
           {
-            "node": "Ollama: Get Metadata",
+            "node": "Chunking",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Code",
+            "node": "Ollama: Get Metadata",
             "type": "main",
             "index": 0
           }
@@ -557,17 +557,6 @@
         ]
       ]
     },
-    "Ollama: Get Metadata": {
-      "main": [
-        [
-          {
-            "node": "Merge1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Combine AI Results": {
       "main": [
         [
@@ -608,17 +597,6 @@
         ]
       ]
     },
-    "Merge1": {
-      "main": [
-        [
-          {
-            "node": "Combine AI Results",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "If": {
       "main": [
         [
@@ -637,11 +615,33 @@
         ]
       ]
     },
-    "Code": {
+    "Chunking": {
       "main": [
         [
           {
             "node": "Ollama: Get Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Combine AI Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama: Get Metadata": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
             "type": "main",
             "index": 0
           }
@@ -652,6 +652,6 @@
   "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "c14dfb3452d9d2266966fd3e5a7fc22c997ff6e18196b19a034a57d243b7bc02"
+    "instanceId": "59038d7a1c6ed5a617f636bfecfe4415beb3eda0565597319a942949c093d1c7"
   }
 }

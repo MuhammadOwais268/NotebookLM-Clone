@@ -203,3 +203,382 @@ The demo GIF suggestion is included but not implemented here; you’ll need to r
 API keys and workflow files (/n8n_workflows) are referenced but not provided; ensure they are available in your repository.
 
 If you need further refinements (e.g., adding a contribution guide, troubleshooting section, or integrating the UI code directly), let me know!
+
+
+
+Where to look / how to access
+
+Frontend UI: http://localhost:8000/index.html
+n8n UI: http://localhost:5678
+Adminer (DB GUI): http://localhost:8080
+Ollama API: http://localhost:11434
+Postgres (from host): port 5433
+
+
+run index.html services by 
+```bash
+cd /home/owais/NotebookLM-Clone
+python3 -m http.server 8000
+```
+
+---
+
+## 🔧 Complete Setup & Run Procedure (Step-by-Step)
+
+Follow this comprehensive guide to set up and run the NotebookLM Clone from scratch.
+
+### Prerequisites Checklist
+- [ ] Docker and Docker Compose installed
+- [ ] Git installed
+- [ ] Python 3 installed (for serving frontend)
+- [ ] API keys obtained (PDF.co, Serper, Gemini)
+
+### Step 1: Stop Any Running Containers (Clean Slate)
+```bash
+cd /home/owais/NotebookLM-Clone
+docker compose down
+```
+This ensures a fresh start by stopping and removing all project containers.
+
+### Step 2: Start All Services
+```bash
+docker compose up -d
+```
+This command starts:
+- **n8n** on port 5678
+- **Postgres** (with pgvector) on port 5433
+- **Ollama** on port 11434
+- **Adminer** (DB GUI) on port 8080
+
+**Wait 30-60 seconds** for all services to fully initialize.
+
+**Verify containers are running:**
+```bash
+docker ps --filter name=n8n_service --filter name=postgres_db --filter name=ollama_cpu
+```
+
+### Step 3: Access n8n and Create Owner Account
+1. Open your browser and navigate to: **http://localhost:5678**
+2. On first visit, you'll be prompted to create an owner account
+3. Fill in:
+   - Email
+   - Password (set a strong password)
+   - First Name / Last Name
+4. Click **Get Started**
+
+### Step 4: Create Postgres Credential in n8n
+
+#### 4.1 Navigate to Credentials
+- In n8n UI, click **Credentials** in the left sidebar
+- Click **Add Credential** button (top right)
+
+#### 4.2 Create Postgres Credential
+1. Search for and select **Postgres**
+2. Fill in the following details:
+   - **Host:** `postgres_db` (service name inside Docker network)
+   - **Port:** `5432` (internal container port)
+   - **Database:** `notebooklm_db`
+   - **User:** `user`
+   - **Password:** `password`
+   - **SSL Mode:** `disable` (or leave default)
+3. Click **Save**
+4. Give it a recognizable name like "Postgres NotebookLM"
+
+**💡 Important:** Use `postgres_db` as host (not `localhost`) because n8n runs inside Docker and connects via the internal network.
+
+### Step 5: Create Google Gemini (PaLM) Credential in n8n
+
+#### 5.1 Navigate to Credentials
+- Click **Add Credential** again
+
+#### 5.2 Create Gemini Credential
+1. Search for and select **Google PaLM API** or **Google Gemini**
+2. Enter your **Gemini API Key** (from https://ai.google.dev/)
+3. Click **Save**
+4. Name it "Gemini NotebookLM"
+
+**📝 Note:** You need to obtain this API key from Google AI Studio beforehand.
+
+### Step 6: Create PostgreSQL Database and Notes Table
+
+#### 6.1 Connect to Postgres
+From your host terminal:
+```bash
+PGPASSWORD=password psql -h localhost -p 5433 -U user -d postgres -c "CREATE DATABASE notebooklm_db;" || true
+```
+
+#### 6.2 Enable pgvector Extension and Create Table
+```bash
+PGPASSWORD=password psql -h localhost -p 5433 -U user -d notebooklm_db <<'SQL'
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE IF NOT EXISTS notes (
+  id serial PRIMARY KEY,
+  title text,
+  summary text,
+  content text,
+  vector vector(1536)
+);
+SQL
+```
+
+#### 6.3 Verify Table Creation
+```bash
+PGPASSWORD=password psql -h localhost -p 5433 -U user -d notebooklm_db -c "\dt"
+```
+You should see the `notes` table listed.
+
+### Step 7: Download Required Ollama Models
+
+Check the README or workflow files to identify required models. Based on the project architecture, download these models:
+
+#### 7.1 Download Embedding Model
+```bash
+docker compose exec ollama ollama pull mxbai-embed-large:latest
+```
+
+#### 7.2 Download Chat/Generation Models
+```bash
+docker compose exec ollama ollama pull gemma:2b
+docker compose exec ollama ollama pull llama3.2:1b
+```
+
+**⏱️ Note:** Model downloads can take 5-15 minutes depending on your internet speed. Each command will show download progress.
+
+#### 7.3 Verify Models Are Downloaded
+```bash
+docker compose exec ollama ollama ls
+```
+or check via API:
+```bash
+curl -sS http://localhost:11434/v1/models | jq .
+```
+
+You should see:
+- `mxbai-embed-large:latest`
+- `gemma:2b`
+- `llama3.2:1b`
+
+### Step 8: Import n8n Workflows
+
+#### 8.1 Navigate to Workflows
+- In n8n UI, click **Workflows** in the left sidebar
+- Click **Add workflow** → **Import from file...**
+
+#### 8.2 Import Workflows in Order
+Import the following JSON files from `/n8n workflows/` directory:
+
+1. **Ingestion & Indexing.json**
+2. **Chat with Document.json**
+3. **online search.json**
+
+For each workflow:
+1. Click **Import from file...**
+2. Select the JSON file
+3. After import, **open the workflow**
+4. Click on nodes that require credentials (e.g., Postgres nodes)
+5. Select the credentials you created earlier from the dropdown
+6. Click **Save** (top right)
+7. **Activate** the workflow using the toggle switch (top right)
+
+### Step 9: Run the Frontend Server
+
+#### 9.1 Start Python HTTP Server
+From your terminal:
+```bash
+cd /home/owais/NotebookLM-Clone
+python3 -m http.server 8000
+```
+
+**Keep this terminal open** — the server runs in foreground.
+
+#### 9.2 Alternative: Run in Background
+If you want to run the server in the background:
+```bash
+cd /home/owais/NotebookLM-Clone
+nohup python3 -m http.server 8000 > /tmp/notebooklm_frontend.log 2>&1 &
+```
+
+To stop the background server later:
+```bash
+pkill -f "python3 -m http.server 8000"
+```
+
+### Step 10: Access the UI
+
+Open your browser and navigate to:
+- **Frontend UI:** http://localhost:8000/index.html
+- **n8n UI:** http://localhost:5678
+- **Adminer (DB GUI):** http://localhost:8080
+- **Ollama API:** http://localhost:11434
+
+### Step 11: Test the Application
+
+#### 11.1 Add a Test Document
+1. In the frontend UI (http://localhost:8000/index.html)
+2. Click **Add Source** button
+3. Select **Plain Text** as type
+4. Enter a test note:
+   ```
+   This is a test document for the NotebookLM clone. 
+   It demonstrates the ingestion and retrieval capabilities.
+   ```
+5. Click **Submit to Webhook**
+6. Wait for success message
+7. Click **Add to List**
+
+#### 11.2 Query Your Document
+1. Select the document from the sources list
+2. In the chat input, type: "What is this document about?"
+3. Click **Send**
+4. You should receive an AI-generated answer with citations
+
+#### 11.3 Verify Data in Database
+```bash
+PGPASSWORD=password psql -h localhost -p 5433 -U user -d notebooklm_db -c \
+"SELECT id, title, summary FROM notes ORDER BY id DESC LIMIT 5;"
+```
+
+---
+
+## 🔍 Troubleshooting Common Issues
+
+### Issue 1: "Tenant or user not found" Error
+**Cause:** n8n Postgres credential is pointing to wrong host/port.
+
+**Solution:**
+- Edit the Postgres credential in n8n
+- Ensure host is `postgres_db` (not `localhost`)
+- Port should be `5432` (internal container port)
+
+### Issue 2: Ollama Models Not Found
+**Cause:** Models not downloaded or wrong model names in workflow.
+
+**Solution:**
+```bash
+# List currently downloaded models
+docker compose exec ollama ollama ls
+
+# Pull missing models
+docker compose exec ollama ollama pull <model-name>
+```
+
+### Issue 3: Frontend Can't Connect to n8n Webhooks
+**Cause:** CORS or webhook path mismatch.
+
+**Solution:**
+- Verify n8n is running: `docker ps --filter name=n8n_service`
+- Check webhook paths in `index.html` match the paths in n8n workflows
+- Ensure `WEBHOOK_CORS_ALLOWED_ORIGINS=*` is set in docker-compose.yml
+
+### Issue 4: pgvector Extension Missing
+**Cause:** Extension not created in database.
+
+**Solution:**
+```bash
+PGPASSWORD=password psql -h localhost -p 5433 -U user -d notebooklm_db -c \
+"CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+### Issue 5: Port Already in Use
+**Cause:** Another service is using port 5678, 5433, 8000, 8080, or 11434.
+
+**Solution:**
+```bash
+# Check what's using the port (example for 5678)
+sudo ss -ltnp | grep :5678
+
+# Kill the process or change the port in docker-compose.yml
+```
+
+---
+
+## 📊 Service Access Summary
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| Frontend UI | http://localhost:8000/index.html | Main application interface |
+| n8n Workflows | http://localhost:5678 | Workflow management & credentials |
+| Adminer | http://localhost:8080 | Database visual admin |
+| Ollama API | http://localhost:11434 | LLM inference endpoint |
+| Postgres | localhost:5433 | Database (psql access from host) |
+
+---
+
+## 🛑 Stopping the Application
+
+### Stop Docker Services
+```bash
+cd /home/owais/NotebookLM-Clone
+docker compose down
+```
+
+### Stop Frontend Server
+If running in foreground: Press `Ctrl+C`
+
+If running in background:
+```bash
+pkill -f "python3 -m http.server 8000"
+```
+
+---
+
+## 🔄 Quick Restart Commands
+
+```bash
+# Full restart
+cd /home/owais/NotebookLM-Clone
+docker compose down
+docker compose up -d
+
+# Wait 30 seconds, then start frontend
+python3 -m http.server 8000
+```
+
+---
+
+## 📝 Useful Maintenance Commands
+
+### View Container Logs
+```bash
+# n8n logs
+docker logs n8n_service --tail 200
+
+# Postgres logs
+docker logs postgres_db --tail 200
+
+# Ollama logs
+docker logs ollama_cpu --tail 200
+```
+
+### Database Queries
+```bash
+# Count notes in database
+PGPASSWORD=password psql -h localhost -p 5433 -U user -d notebooklm_db -c \
+"SELECT COUNT(*) FROM notes;"
+
+# View recent notes
+PGPASSWORD=password psql -h localhost -p 5433 -U user -d notebooklm_db -c \
+"SELECT id, title, LEFT(summary, 100) FROM notes ORDER BY id DESC LIMIT 10;"
+```
+
+### Check System Resources
+```bash
+# Docker container resource usage
+docker stats --no-stream
+
+# Check disk space used by Docker
+docker system df
+```
+
+---
+
+## 🎯 Next Steps
+
+After successful setup:
+1. ✅ Import additional documents (PDFs, URLs, text)
+2. ✅ Configure additional n8n workflows for online search
+3. ✅ Customize the frontend UI (`index.html`)
+4. ✅ Set up backup scripts for Postgres data
+5. ✅ Explore advanced querying with vector similarity
+
+**Happy researching with your NotebookLM Clone! 🚀**
